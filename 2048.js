@@ -54,11 +54,11 @@ class Game {
         this.data[position[0]][position[1]] = 2;
     }
 
-    shiftBlock(arr, reverse = true) {
+    shiftBlock(arr, reverse = false) {
         let head = 0;
         let tail = 1;
         let incr = 1;
-        if (reverse == false) {
+        if (reverse == true) {
             head = arr.length - 1;
             tail = head - 1;
             incr = -1;
@@ -87,6 +87,34 @@ class Game {
             }
         }
     }
+
+    // command in ["left", "right", "up", "down"]
+    advance(command) {
+        let reverse = (command == "right" || command == "down");
+        if (command == "left" || command == "right") {
+            // 如果是左和右直接调用shiftBlock
+            for (let i = 0; i < GAME_SIZE; i++) {
+                this.shiftBlock(this.data[i], reverse);
+            }
+        } else if (command == "up" || command == "down") {
+
+            for (let j = 0; j < GAME_SIZE; j++) {
+                let tmp = [];
+                for (let i = 0; i < GAME_SIZE; i++) {
+                    tmp.push(this.data[i][j]);
+                }
+                this.shiftBlock(tmp, reverse);
+                for (let i = 0; i < GAME_SIZE; i++) {
+                    this.data[i][j] = tmp[i];
+                }
+            }
+
+        }
+
+        // 每次操作完成时应该生成一个新的block
+        this.generateNewBlock();
+
+    }
 }
 
 // Tests
@@ -97,7 +125,7 @@ class Test {
         }
 
         for (let i = 0; i < arr1.length; i++) {
-            if (arr[i] != arr2[i]) {
+            if (arr1[i] != arr2[i]) {
                 return false;
             }
         }
@@ -109,18 +137,28 @@ class Test {
         let gameTest = new Game()
         let testCases = [
             [[2, 2, 2, 2], [4, 4, null, null]],
-            [[2, 2, null, 2], [4, 2, null, null]]
+            [[2, 2, null, 2], [4, 2, null, null]],
+            [[null, null, null, null], [null, null, null, null]],
+            [[4, 8, 8, null], [4, 16, null, null]],
         ]
         let errorFlag = false;
 
         for (let test of testCases) {
-            let input = test[0];
-            let result = test[1];
-            gameTest.shiftBlock(input);
-            if (!Test.compareArray(input, result)) {
-                errorFlag = true;
-                console.log("ERROR");
-                console.log(input, result);
+            for (let reverse of [true, false]) {
+                let input = test[0].slice();
+                let result = test[1].slice();
+                if (reverse == true) {
+                    input.reverse();
+                    result.reverse();
+                }
+
+                gameTest.shiftBlock(input, reverse);
+                if (!Test.compareArray(input, result)) {
+                    errorFlag = true;
+                    console.log("ERROR");
+                    console.log(reverse);
+                    console.log(input, result);
+                }
             }
         }
 
@@ -197,3 +235,16 @@ var container = document.getElementById("game-container");
 var game = new Game();
 var view = new View(game, container);
 view.drawGame();
+
+document.onkeydown = function(event) {
+    if (event.key == "ArrowLeft") {
+        game.advance("left");
+    } else if (event.key == "ArrowRight") {
+        game.advance("right");
+    } else if (event.key == "ArrowUp") {
+        game.advance("up");
+    } else {
+        game.advance("down");
+    }
+    view.drawGame();
+}
