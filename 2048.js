@@ -79,6 +79,47 @@ class Game {
     }
 }
 
+// Tests
+class Test {
+    static compareArray(arr1, arr2) {
+        if (arr1.length != arr2,this.length) {
+            return false;
+        }
+
+        for (let i = 0; i < arr1.length; i++) {
+            if (arr[i] != arr2[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static test_shiftBlock() {
+        let gameTest = new Game()
+        let testCases = [
+            [[2, 2, 2, 2], [4, 4, null, null]],
+            [[2, 2, null, 2], [4, 2, null, null]]
+        ]
+        let errorFlag = false;
+
+        for (let test of testCases) {
+            let input = test[0];
+            let result = test[1];
+            gameTest.shiftBlock(input);
+            if (!Test.compareArray(input, result)) {
+                errorFlag = true;
+                console.log("ERROR");
+            }
+        }
+
+        if (!errorFlag) {
+            console.log("Pass!");
+        }
+
+    }
+}
+
 // View
 class View {
     constructor(game, container) {
