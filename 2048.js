@@ -54,27 +54,34 @@ class Game {
         this.data[position[0]][position[1]] = 2;
     }
 
-    shiftBlock(arr) {
+    shiftBlock(arr, reverse = true) {
         let head = 0;
         let tail = 1;
-        while (tail < arr.length) {
+        let incr = 1;
+        if (reverse == false) {
+            head = arr.length - 1;
+            tail = head - 1;
+            incr = -1;
+        }
+
+        while (tail >= 0 && tail < arr.length) {
             if (arr[tail] == null) {
-                tail += 1;
+                tail += incr;
             } else {
                 if (arr[head] == null) {
                     arr[head] = arr[tail];
                     arr[tail] = null;
-                    tail += 1; 
+                    tail += incr; 
                 } else if (arr[head] == arr[tail]) {
                     // 进行撞击并增加值
                     arr[head] = arr[head] * 2;
                     arr[tail] = null;
-                    head += 1;
-                    tail += 1;
+                    head += incr;
+                    tail += incr;
                 } else {
-                    head += 1;
+                    head += incr;
                     if (head == tail) {
-                        tail += 1;
+                        tail += incr;
                     }
                 }
             }
