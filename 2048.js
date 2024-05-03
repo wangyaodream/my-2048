@@ -1,12 +1,16 @@
 // Constant
 CANVAS_SIZE = 600;
-CANVAS_BACKGROUD_COLOR = "333333";
+CANVAS_BACKGROUD_COLOR = "D4DFE6";
 BLOCK_SIZE = 130;
 GAME_SIZE = 4;
 PADDING_SIZE = (CANVAS_SIZE - GAME_SIZE * BLOCK_SIZE) / 5
 
-BLOCK_PLACEHOLDER_COLOR = "555555";
-BLOCK_BACKGROUND_COLOR = "664455";
+BLOCK_PLACEHOLDER_COLOR = "C4CFD6";
+BLOCK_BACKGROUND_COLOR = "CADBE9";
+BLOCK_FONT_COLOR = "444444";
+
+FRAME_PRE_SECOND = 30;
+AINMATION_TIME = 0.5;
 
 // Global Utility Functions
 randInt = function(a, b) {
@@ -58,6 +62,8 @@ class Game {
         let head = 0;
         let tail = 1;
         let incr = 1;
+        let moves = [];
+
         if (reverse == true) {
             head = arr.length - 1;
             tail = head - 1;
@@ -71,11 +77,13 @@ class Game {
                 if (arr[head] == null) {
                     arr[head] = arr[tail];
                     arr[tail] = null;
+                    moves.push([tail, head]);
                     tail += incr; 
                 } else if (arr[head] == arr[tail]) {
                     // 进行撞击并增加值
                     arr[head] = arr[head] * 2;
                     arr[tail] = null;
+                    moves.push([tail, head]);
                     head += incr;
                     tail += incr;
                 } else {
@@ -86,15 +94,21 @@ class Game {
                 }
             }
         }
+
+        return moves;
     }
 
     // command in ["left", "right", "up", "down"]
     advance(command) {
         let reverse = (command == "right" || command == "down");
+        let moves = [];
         if (command == "left" || command == "right") {
             // 如果是左和右直接调用shiftBlock
             for (let i = 0; i < GAME_SIZE; i++) {
-                this.shiftBlock(this.data[i], reverse);
+                let rowMove = this.shiftBlock(this.data[i], reverse);
+                for (let move of rowMove) {
+                    moves.push([[i, move[0]], [i, move[1]]])
+                }
             }
         } else if (command == "up" || command == "down") {
 
@@ -103,7 +117,10 @@ class Game {
                 for (let i = 0; i < GAME_SIZE; i++) {
                     tmp.push(this.data[i][j]);
                 }
-                this.shiftBlock(tmp, reverse);
+                let colMove = this.shiftBlock(tmp, reverse);
+                for (let move of colMove) {
+                    moves.push([[move[0], j], [move[1], j]]);
+                }
                 for (let i = 0; i < GAME_SIZE; i++) {
                     this.data[i][j] = tmp[i];
                 }
@@ -111,10 +128,15 @@ class Game {
 
         }
 
-        // 每次操作完成时应该生成一个新的block
-        this.generateNewBlock();
+        if (moves.length != 0) {
+            // 每次操作完成时应该生成一个新的block
+            this.generateNewBlock();
+        }
+
+        return moves;
 
     }
+
 }
 
 // Tests
@@ -172,7 +194,8 @@ class Test {
 // View
 class View {
     constructor(game, container) {
-        this.game = game
+        this.game = game;
+        this.blocks = [];
         this.container = container;
         this.initializeContainer();
     }
@@ -183,6 +206,9 @@ class View {
         this.container.style.backgroundColor = CANVAS_BACKGROUD_COLOR;
         this.container.style.position = "relative";
         this.container.style.display = "inline-block";
+        this.container.style.borderRadius = "5px";
+        this.container.style.color = BLOCK_FONT_COLOR;
+        this.container.zIndex = 1;
     }
 
     gridToPosition(i, j) {
@@ -192,14 +218,52 @@ class View {
         return [top, left]
     }
 
+    animate(moves) {
+        this.doFrame(moves, 0, AINMATION_TIME);
+    }
+
+    doFrame(moves, currTime, totalTime) {
+        if (currTime < totalTime) {
+            // 画动画
+            setTimeout(() => {
+                this.doFrame(moves, currTime + 1 / FRAME_PRE_SECOND, totalTime)
+            }, 1 / FRAME_PRE_SECOND * 1000)
+
+            for (let move of moves) {
+                // move -> [[x1, y1], [x2, y2]]
+                let block = this.blocks[move[0][0]][move[0][1]];
+
+                let origin = this.gridToPosition(move[0][0], move[0][1]);
+                let destination = this.gridToPosition(move[1][0], move[1][1])
+                let currPosition = [
+                    origin[0] + currTime / totalTime * (destination[0] - origin[0]),
+                    origin[1] + currTime / totalTime * (destination[1] - origin[1])
+                ]
+
+                block.style.top = currPosition[0];
+                block.style.left = currPosition[1];
+            }
+        } else {
+            this.drawGame();
+        }
+    }
+
     drawGame() {
+        // 擦除上次游戏的node
+        this.container.innerHTML = "";
+        this.blocks = [];
         for (let i = 0; i < GAME_SIZE; i++) {
+            let tmp = [];
             for (let j = 0; j < GAME_SIZE; j++) {
+                let block = [];
                 this.drawBackgroundBlock(i, j, BLOCK_PLACEHOLDER_COLOR);
                 if (this.game.data[i][j]) {
-                this.drawBlock(i, j, this.game.data[i][j]);
+                    block = this.drawBlock(i, j, this.game.data[i][j]);
                 }
+                tmp.push(block);
             }
+
+            this.blocks.push(tmp);
         }
     }
 
@@ -212,6 +276,8 @@ class View {
         block.style.position = "absolute";
         block.style.top = position[0];
         block.style.left = position[1];
+        block.style.borderRadius = "5px";
+        this.container.zIndex = 3;
         this.container.append(block);
         return block;
     }
@@ -222,11 +288,14 @@ class View {
         let block = this.drawBackgroundBlock(i, j, BLOCK_BACKGROUND_COLOR);
         span.appendChild(text);
         block.appendChild(span);
+        block.style.zIndex = 5;
 
         // 将文本内容剧中
         span.style.position = "absolute";
         span.style.top = (BLOCK_SIZE - span.offsetHeight) / 2;
         span.style.left = (BLOCK_SIZE - span.offsetWidth) / 2;
+
+        return block;
     }
 }
 
@@ -237,14 +306,18 @@ var view = new View(game, container);
 view.drawGame();
 
 document.onkeydown = function(event) {
+    let moves = null;
     if (event.key == "ArrowLeft") {
-        game.advance("left");
+        moves = game.advance("left");
     } else if (event.key == "ArrowRight") {
-        game.advance("right");
+        moves = game.advance("right");
     } else if (event.key == "ArrowUp") {
-        game.advance("up");
-    } else {
-        game.advance("down");
+        moves = game.advance("up");
+    } else if (event.key == "ArrowDown") {
+        moves = game.advance("down");
     }
-    view.drawGame();
+    if (moves.length > 0) {
+        view.animate(moves);
+    }
+    // view.drawGame();
 }
