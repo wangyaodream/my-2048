@@ -73,6 +73,9 @@ class Game {
                     tail += 1;
                 } else {
                     head += 1;
+                    if (head == tail) {
+                        tail += 1;
+                    }
                 }
             }
         }
@@ -110,6 +113,7 @@ class Test {
             if (!Test.compareArray(input, result)) {
                 errorFlag = true;
                 console.log("ERROR");
+                console.log(input, result);
             }
         }
 
