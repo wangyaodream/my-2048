@@ -1,11 +1,11 @@
 // Constant
 CANVAS_SIZE = 600;
 CANVAS_BACKGROUD_COLOR = "333333";
+BLOCK_SIZE = 130;
 GAME_SIZE = 4;
+PADDING_SIZE = (CANVAS_SIZE - GAME_SIZE * BLOCK_SIZE) / 5
 
-BLOCK_SIZE = 150;
 BLOCK_PLACEHOLDER_COLOR = "555555";
-BLOCK_PADDING = 10;
 BLOCK_BACKGROUND_COLOR = "664455";
 
 // Global Utility Functions
@@ -53,6 +53,30 @@ class Game {
         // console.log(position);
         this.data[position[0]][position[1]] = 2;
     }
+
+    shiftBlock(arr) {
+        let head = 0;
+        let tail = 1;
+        while (tail < arr.length) {
+            if (arr[tail] == null) {
+                tail += 1;
+            } else {
+                if (arr[head] == null) {
+                    arr[head] = arr[tail];
+                    arr[tail] = null;
+                    tail += 1; 
+                } else if (arr[head] == arr[tail]) {
+                    // 进行撞击并增加值
+                    arr[head] = arr[head] * 2;
+                    arr[tail] = null;
+                    head += 1;
+                    tail += 1;
+                } else {
+                    head += 1;
+                }
+            }
+        }
+    }
 }
 
 // View
@@ -71,6 +95,13 @@ class View {
         this.container.style.display = "inline-block";
     }
 
+    gridToPosition(i, j) {
+        let top = i * (BLOCK_SIZE + PADDING_SIZE) + PADDING_SIZE;
+        let left = j * (BLOCK_SIZE + PADDING_SIZE) + PADDING_SIZE;
+
+        return [top, left]
+    }
+
     drawGame() {
         for (let i = 0; i < GAME_SIZE; i++) {
             for (let j = 0; j < GAME_SIZE; j++) {
@@ -84,12 +115,13 @@ class View {
 
     drawBackgroundBlock(row, col, color) {
         let block = document.createElement("div");
-        block.style.width = BLOCK_SIZE - BLOCK_PADDING * 2;
-        block.style.height = BLOCK_SIZE - BLOCK_PADDING * 2;
+        let position = this.gridToPosition(row, col);
+        block.style.width = BLOCK_SIZE;
+        block.style.height = BLOCK_SIZE;
         block.style.backgroundColor = color;
         block.style.position = "absolute";
-        block.style.top = row * (BLOCK_SIZE) + (BLOCK_PADDING / 2);
-        block.style.left = col * (BLOCK_SIZE) + (BLOCK_PADDING / 2);
+        block.style.top = position[0];
+        block.style.left = position[1];
         this.container.append(block);
         return block;
     }
@@ -99,11 +131,12 @@ class View {
         let text = document.createTextNode(number);
         let block = this.drawBackgroundBlock(i, j, BLOCK_BACKGROUND_COLOR);
         span.appendChild(text);
-        span.style.fontSize = 80;
-        span.style.textAlign = "center";
         block.appendChild(span);
-        block.style.textAlign = "center";
-        
+
+        // 将文本内容剧中
+        span.style.position = "absolute";
+        span.style.top = (BLOCK_SIZE - span.offsetHeight) / 2;
+        span.style.left = (BLOCK_SIZE - span.offsetWidth) / 2;
     }
 }
 
